@@ -1,0 +1,12 @@
+[tool.pylance]
+# Especifica las carpetas de las que se puede importar código (Source Roots)
+# El "." se refiere a la carpeta actual (backend/)
+# Esto le dice a Pylance: "app.schemas.granjas" se resuelve buscando
+# en ./app/schemas/granjas.py
+# Si la carpeta 'app' está en la raíz, el valor debería ser ["."].
+
+# Si la carpeta 'app' está directamente en la carpeta 'backend', usa:
+extraPaths = ["."]
+
+# Opcionalmente, para ser más específico (si 'app' está al mismo nivel que 'backend'):
+# extraPaths = [".."]
