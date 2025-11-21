@@ -42,7 +42,7 @@ def listar_usuarios(
             nombre=usuario.nombre,
             email=usuario.email,
             rol_id=usuario.rol_id,
-            rol_nombre=usuario.rol_relacion.nombre,
+            rol_nombre=usuario.rol.nombre,
             activo=usuario.activo,
             fecha_creacion=usuario.fecha_creacion
         )
@@ -72,7 +72,7 @@ def obtener_usuario(
         nombre=usuario.nombre,
         email=usuario.email,
         rol_id=usuario.rol_id,
-        rol_nombre=usuario.rol_relacion.nombre,
+        rol_nombre=usuario.rol.nombre,
         activo=usuario.activo,
         fecha_creacion=usuario.fecha_creacion
     )
@@ -114,7 +114,7 @@ def actualizar_usuario(
         nombre=usuario_actualizado.nombre,
         email=usuario_actualizado.email,
         rol_id=usuario_actualizado.rol_id,
-        rol_nombre=usuario_actualizado.rol_relacion.nombre,
+        rol_nombre=usuario_actualizado.rol.nombre,
         activo=usuario_actualizado.activo,
         fecha_creacion=usuario_actualizado.fecha_creacion
     )
@@ -148,7 +148,7 @@ def cambiar_rol(
         nombre=usuario_actualizado.nombre,
         email=usuario_actualizado.email,
         rol_id=usuario_actualizado.rol_id,
-        rol_nombre=usuario_actualizado.rol_relacion.nombre,
+        rol_nombre=usuario_actualizado.rol.nombre,
         activo=usuario_actualizado.activo,
         fecha_creacion=usuario_actualizado.fecha_creacion
     )
@@ -181,7 +181,7 @@ def obtener_mi_perfil(current_user: Usuario = Depends(get_current_user)):
         nombre=current_user.nombre,
         email=current_user.email,
         rol_id=current_user.rol_id,
-        rol_nombre=current_user.rol_relacion.nombre,
+        rol_nombre=current_user.rol.nombre,
         activo=current_user.activo,
         fecha_creacion=current_user.fecha_creacion
     )
@@ -207,7 +207,7 @@ def buscar_usuario_por_email(
         nombre=usuario.nombre,
         email=usuario.email,
         rol_id=usuario.rol_id,
-        rol_nombre=usuario.rol_relacion.nombre,
+        rol_nombre=usuario.rol.nombre,
         activo=usuario.activo,
         fecha_creacion=usuario.fecha_creacion
     )

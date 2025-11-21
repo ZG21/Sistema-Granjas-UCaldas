@@ -5,7 +5,19 @@ from app.api import (
     oauth_google, 
     auth_tradicional,
     usuarios,
-    sync
+    sync,
+    programas,
+    lotes,
+    tipo_lotes,
+    cultivos_especies,
+    tipo_labores,
+    categorias_inventario,
+    insumos,
+    herramientas,
+    diagnosticos,
+    recomendaciones,
+    labores,
+    evidencias  # ✅ AGREGADO: Importar evidencias
 )
 from app.db.database import engine, Base
 from app.db.models import Usuario, Granja, Programa, Lote, Labor, Rol  # Importar modelos existentes
@@ -40,10 +52,22 @@ app.add_middleware(
 
 # Incluir routers
 app.include_router(oauth_google.router, prefix="/api")
-app.include_router(auth_tradicional.router, prefix="/api")  # ✅ NUEVO
+app.include_router(auth_tradicional.router, prefix="/api")
 app.include_router(usuarios.router, prefix="/api")
 app.include_router(granjas.router, prefix="/api")
 app.include_router(sync.router, prefix="/api")
+app.include_router(programas.router, prefix="/api")
+app.include_router(lotes.router, prefix="/api")
+app.include_router(tipo_lotes.router, prefix="/api")
+app.include_router(cultivos_especies.router, prefix="/api")
+app.include_router(tipo_labores.router, prefix="/api")
+app.include_router(categorias_inventario.router, prefix="/api")
+app.include_router(insumos.router, prefix="/api")
+app.include_router(herramientas.router, prefix="/api")
+app.include_router(diagnosticos.router, prefix="/api")
+app.include_router(recomendaciones.router, prefix="/api")
+app.include_router(labores.router, prefix="/api")
+app.include_router(evidencias.router, prefix="/api")  # ✅ AGREGADO: Incluir router de evidencias
 
 @app.get("/")
 def root():
@@ -66,6 +90,7 @@ def api_info():
             "auth": "/api/auth",
             "usuarios": "/api/usuarios",
             "granjas": "/api/granjas",
-            "sync": "/api/sync"
+            "sync": "/api/sync",
+            "evidencias": "/api/evidencias"  # ✅ AGREGADO: Información del endpoint
         }
     }

@@ -15,6 +15,7 @@ function App() {
     const checkBackend = async () => {
       try {
         const isOnline = await checkBackendConnection();
+        console.log("Marlon isOn", isOnline);
         setBackendOnline(isOnline);
         console.log(`🌐 Backend: ${isOnline ? 'Conectado' : 'Desconectado'}`);
       } catch (error) {
