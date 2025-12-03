@@ -1,4 +1,3 @@
-// src/services/granjaService.ts
 import type { Granja, Usuario, Programa } from '../types/granjaTypes';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
@@ -160,16 +159,15 @@ export const granjaService = {
     }
   },
 
-  // REMOVER usuario de granja
+  // REMOVER usuario de granja - CORREGIDO: id en URL
   async removerUsuario(granjaId: number, usuarioId: number): Promise<void> {
-    const url = `${API_BASE_URL}/granjas/${granjaId}/usuarios`;
-    console.log('🔗 DEBUG URL removerUsuario:', url);
-    console.log('📤 DEBUG Body removerUsuario:', { usuario_id: usuarioId });
+    const url = `${API_BASE_URL}/granjas/${granjaId}/usuarios/${usuarioId}`; // <-- USUARIO_ID EN URL
+    console.log('🔗 DEBUG URL removerUsuario (CORREGIDO):', url);
     
     const response = await fetch(url, {
       method: 'DELETE',
-      headers: getHeaders(),
-      body: JSON.stringify({ usuario_id: usuarioId })
+      headers: getHeaders()
+      // SIN BODY - el usuarioId está en la URL
     });
     
     if (!response.ok) {
@@ -227,16 +225,15 @@ export const granjaService = {
     }
   },
 
-  // REMOVER programa de granja
+  // REMOVER programa de granja - CORREGIDO: id en URL
   async removerPrograma(granjaId: number, programaId: number): Promise<void> {
-    const url = `${API_BASE_URL}/granjas/${granjaId}/programas`;
-    console.log('🔗 DEBUG URL removerPrograma:', url);
-    console.log('📤 DEBUG Body removerPrograma:', { programa_id: programaId });
+    const url = `${API_BASE_URL}/granjas/${granjaId}/programas/${programaId}`; // <-- PROGRAMA_ID EN URL
+    console.log('🔗 DEBUG URL removerPrograma (CORREGIDO):', url);
     
     const response = await fetch(url, {
       method: 'DELETE',
-      headers: getHeaders(),
-      body: JSON.stringify({ programa_id: programaId })
+      headers: getHeaders()
+      // SIN BODY - el programaId está en la URL
     });
     
     if (!response.ok) {
