@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from app.db.models import (
     Labor, Usuario, Recomendacion, Lote, Herramienta, Insumo,
     MovimientoHerramienta, MovimientoInsumo, AsignacionHerramienta,
-    Evidencia, TipoLabor, Granja
+    Evidencia, TipoLabor, Granja, Programa
 )
 from app.schemas.labor_schema import (
     LaborCreate, LaborUpdate, AsignacionHerramientaRequest,
@@ -96,7 +96,7 @@ def listar_labores_crud(
     total = query.count()
     items = query.offset(skip).limit(limit).all()
     
-    # ✅ CORREGIDO: Convertir a diccionarios con recursos
+    # Convertir a diccionarios con recursos
     labores_dict = []
     for item in items:
         _cargar_relaciones_labor(item)
@@ -110,37 +110,68 @@ def listar_labores_crud(
         "paginas": (total + limit - 1) // limit
     }
 
-def obtener_labor_crud(db: Session, id: int, usuario: Usuario = None):
+# ========== FUNCIONES SEPARADAS PARA OBJETO Y DICCIONARIO ==========
+
+def obtener_labor_objeto(db: Session, id: int, usuario: Usuario = None):
+    """Obtiene el objeto Labor de SQLAlchemy (para actualizar/eliminar)"""
     labor = db.query(Labor).filter(Labor.id == id).first()
-    if labor:
-        _cargar_relaciones_labor(labor)
-        _cargar_recursos_labor(db, labor)
-        
-        # Verificar permisos
+    if not labor:
+        return None
+    
+    # Cargar relaciones básicas
+    if labor.trabajador:
+        labor.trabajador_nombre = labor.trabajador.nombre
+    if labor.recomendacion:
+        labor.recomendacion_titulo = labor.recomendacion.titulo
+        # Cargar lote desde la recomendación si labor no tiene lote_id
+        if labor.recomendacion.lote:
+            labor.lote_nombre = labor.recomendacion.lote.nombre
+            if labor.recomendacion.lote.granja:
+                labor.granja_nombre = labor.recomendacion.lote.granja.nombre
+    # Si labor tiene lote directamente
+    if labor.lote:
+        labor.lote_nombre = labor.lote.nombre
+        if labor.lote.granja:
+            labor.granja_nombre = labor.lote.granja.nombre
+    if labor.tipo_labor:
+        labor.tipo_labor_nombre = labor.tipo_labor.nombre
+        labor.tipo_labor_descripcion = labor.tipo_labor.descripcion
+    
+    # Verificar permisos
+    if usuario:
         if usuario.rol.nombre == "trabajador" and labor.trabajador_id != usuario.id:
             return None
         elif usuario.rol.nombre == "docente" or usuario.rol.nombre == "asesor":
-            recomendacion = db.query(Recomendacion).filter(Recomendacion.id == labor.recomendacion_id).first()
+            recomendacion = labor.recomendacion
             if not recomendacion or recomendacion.docente_id != usuario.id:
                 return None
         elif usuario.rol.nombre == "talento_humano":
-            trabajador = db.query(Usuario).filter(Usuario.id == labor.trabajador_id).first()
+            trabajador = labor.trabajador
             if not trabajador or trabajador.programa_id != usuario.programa_id:
                 return None
-        
-        # ✅ CORREGIDO: Retornar diccionario con recursos
-        return _labor_a_dict_con_recursos(labor)
-                
+    
     return labor
 
+def obtener_labor_dict(db: Session, id: int, usuario: Usuario = None):
+    """Obtiene la labor como diccionario (para respuestas API)"""
+    labor = obtener_labor_objeto(db, id, usuario)
+    if not labor:
+        return None
+    
+    _cargar_recursos_labor(db, labor)
+    return _labor_a_dict_con_recursos(labor)
+
+# ========== FUNCIONES DE ACTUALIZACIÓN ==========
+
 def actualizar_labor_crud(db: Session, labor: Labor, data: LaborUpdate, usuario: Usuario):
+    """Actualiza una labor existente"""
     # Verificar permisos
     _verificar_permisos_labor(labor, usuario, "editar")
     
     update_data = data.dict(exclude_unset=True)
     
     # Si se actualiza tipo_labor_id, verificar que existe
-    if 'tipo_labor_id' in update_data:
+    if 'tipo_labor_id' in update_data and update_data['tipo_labor_id']:
         tipo_labor = db.query(TipoLabor).filter(TipoLabor.id == update_data['tipo_labor_id']).first()
         if not tipo_labor:
             raise HTTPException(404, "Tipo de labor no encontrado")
@@ -161,6 +192,7 @@ def actualizar_labor_crud(db: Session, labor: Labor, data: LaborUpdate, usuario:
     return _labor_a_dict_con_recursos(labor)
 
 def eliminar_labor_crud(db: Session, labor: Labor, usuario: Usuario):
+    """Elimina una labor"""
     _verificar_permisos_labor(labor, usuario, "eliminar")
     
     # Verificar que no tenga movimientos asociados
@@ -216,8 +248,43 @@ def asignar_insumo_crud(db: Session, labor: Labor, data: AsignacionInsumoRequest
     if insumo.cantidad_disponible < data.cantidad:
         raise HTTPException(400, f"No hay suficiente disponibilidad. Disponible: {insumo.cantidad_disponible}")
     
-    if labor.recomendacion and labor.recomendacion.lote and labor.recomendacion.lote.programa_id != insumo.programa_id:
-        raise HTTPException(400, "El insumo no pertenece al programa de esta labor")
+    # ========== CORRECCIÓN: Verificación de programa del insumo ==========
+    # Necesitamos obtener el programa del lote o de la recomendación
+    programa_id_labor = None
+    
+    # Primero intentar obtener desde el lote directo de la labor
+    if labor.lote_id:
+        lote = db.query(Lote).filter(Lote.id == labor.lote_id).first()
+        if lote:
+            programa_id_labor = lote.programa_id
+    
+    # Si no tiene lote directo, intentar desde la recomendación
+    if not programa_id_labor and labor.recomendacion_id:
+        recomendacion = db.query(Recomendacion).filter(Recomendacion.id == labor.recomendacion_id).first()
+        if recomendacion and recomendacion.lote_id:
+            lote_rec = db.query(Lote).filter(Lote.id == recomendacion.lote_id).first()
+            if lote_rec:
+                programa_id_labor = lote_rec.programa_id
+    
+    # Si aún no tenemos programa_id, obtenerlo del trabajador
+    if not programa_id_labor:
+        trabajador = db.query(Usuario).filter(Usuario.id == labor.trabajador_id).first()
+        if trabajador and trabajador.programa_id:
+            programa_id_labor = trabajador.programa_id
+    
+    # Verificar que el insumo pertenece al programa de la labor
+    if programa_id_labor and insumo.programa_id != programa_id_labor:
+        # Obtener nombres para el mensaje de error
+        programa_insumo = db.query(Programa).filter(Programa.id == insumo.programa_id).first()
+        programa_labor = db.query(Programa).filter(Programa.id == programa_id_labor).first()
+        
+        raise HTTPException(400, 
+            f"El insumo '{insumo.nombre}' pertenece al programa '{programa_insumo.nombre if programa_insumo else 'Desconocido'}', "
+            f"pero la labor está asociada al programa '{programa_labor.nombre if programa_labor else 'Desconocido'}'. "
+            f"Solo puedes asignar insumos del mismo programa."
+        )
+    
+    # ========== FIN CORRECCIÓN ==========
     
     movimiento = MovimientoInsumo(
         insumo_id=data.insumo_id,
@@ -305,6 +372,48 @@ def devolver_herramienta_crud(db: Session, labor: Labor, movimiento_id: int, can
     
     return {"message": "✅ Herramienta devuelta correctamente"}
 
+
+def devolver_insumo_crud(db: Session, labor: Labor, movimiento_id: int, cantidad: float, usuario: Usuario):
+    """
+    Devuelve insumos que fueron consumidos en una labor.
+    Similar a devolver_herramienta_crud pero para insumos.
+    """
+    _verificar_permisos_labor(labor, usuario, "devolver")
+    
+    # Buscar el movimiento de salida (consumo)
+    movimiento = db.query(MovimientoInsumo).filter(
+        and_(
+            MovimientoInsumo.id == movimiento_id,
+            MovimientoInsumo.labor_id == labor.id,
+            MovimientoInsumo.tipo_movimiento == "salida"
+        )
+    ).first()
+    
+    if not movimiento:
+        raise HTTPException(404, "Movimiento de insumo no encontrado")
+    
+    if cantidad > movimiento.cantidad:
+        raise HTTPException(400, f"No puede devolver más de lo consumido. Consumido: {movimiento.cantidad}")
+    
+    # Crear movimiento de entrada (devolución)
+    movimiento_devolucion = MovimientoInsumo(
+        insumo_id=movimiento.insumo_id,
+        labor_id=labor.id,
+        cantidad=cantidad,
+        tipo_movimiento="entrada",
+        observaciones=f"Devolución de insumo de labor {labor.id}"
+    )
+    
+    # Actualizar disponibilidad del insumo
+    insumo = db.query(Insumo).filter(Insumo.id == movimiento.insumo_id).first()
+    if insumo:
+        insumo.cantidad_disponible += cantidad
+    
+    db.add(movimiento_devolucion)
+    db.commit()
+    
+    return {"message": "✅ Insumo devuelto correctamente"}
+
 # === FUNCIONES ADICIONALES ===
 
 def listar_labores_por_trabajador(db: Session, trabajador_id: int, skip: int = 0, limit: int = 100, estado: str = None, usuario: Usuario = None):
@@ -319,7 +428,7 @@ def listar_labores_por_trabajador(db: Session, trabajador_id: int, skip: int = 0
     total = query.count()
     items = query.offset(skip).limit(limit).all()
     
-    # ✅ CORREGIDO: Convertir a diccionarios con recursos
+    # Convertir a diccionarios con recursos
     labores_dict = []
     for item in items:
         _cargar_relaciones_labor(item)
@@ -344,7 +453,7 @@ def listar_labores_por_recomendacion(db: Session, recomendacion_id: int, skip: i
     total = query.count()
     items = query.offset(skip).limit(limit).all()
     
-    # ✅ CORREGIDO: Convertir a diccionarios con recursos
+    # Convertir a diccionarios con recursos
     labores_dict = []
     for item in items:
         _cargar_relaciones_labor(item)

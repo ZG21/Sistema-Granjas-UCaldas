@@ -70,6 +70,13 @@ const ModulesGrid: React.FC<ModulesGridProps> = ({ navigate }) => {
             permission: 'all' // O específico como 'admin,docente,estudiante'
         },
         {
+            title: 'Recomendaciones',
+            description: 'Gestiona recomendaciones para cultivos',
+            icon: 'fas fa-lightbulb',
+            path: '/gestion/recomendaciones',
+            color: 'bg-gradient-to-r from-purple-500 to-indigo-600',
+        },
+        {
             id: 'labores',
             title: 'Labores',
             description: 'Supervisa tareas y asignaciones',

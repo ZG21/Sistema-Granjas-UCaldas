@@ -1,20 +1,20 @@
-// src/pages/GestionLaboresPage.tsx
+// src/pages/GestionRecomendacionesPage.tsx
 import React from 'react';
 import DashboardHeader from '../components/Common/DashboardHeader';
-import GestionLabores from '../components/Labores/GestionLabores';
+import GestionRecomendaciones from '../components/Recomendaciones/GestionRecomendaciones';
 
-const GestionLaboresPage: React.FC = () => {
+const GestionRecomendacionesPage: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             <DashboardHeader
-                selectedModule="labores"
+                selectedModule="recomendaciones"
                 onBack={() => window.history.back()}
             />
             <div className="container mx-auto px-4 py-8">
-                <GestionLabores />
+                <GestionRecomendaciones />
             </div>
         </div>
     );
 };
 
-export default GestionLaboresPage;
+export default GestionRecomendacionesPage;
