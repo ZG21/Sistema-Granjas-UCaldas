@@ -3,7 +3,13 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.db.database import get_db
 from app.core.dependencies import require_role, get_current_user
-from app.CRUD.labores import *
+from app.CRUD.labores import (
+    crear_labor_crud, listar_labores_crud, obtener_labor_objeto, 
+    obtener_labor_dict, actualizar_labor_crud, eliminar_labor_crud,
+    asignar_herramienta_crud, asignar_insumo_crud, registrar_avance_crud,
+    completar_labor_crud, devolver_herramienta_crud, listar_labores_por_trabajador,
+    listar_labores_por_recomendacion, obtener_estadisticas_labores_crud
+)
 from app.schemas.labor_schema import (
     LaborCreate, LaborUpdate, LaborResponse, LaborListResponse,
     LaborWithRecursosResponse, AsignacionHerramientaRequest,
@@ -55,7 +61,7 @@ def obtener_labor(
     Obtener una labor con sus recursos asignados.
     Incluye tipo_labor_nombre y tipo_labor_descripcion si el CRUD las carga.
     """
-    labor = obtener_labor_crud(db, id, usuario)
+    labor = obtener_labor_dict(db, id, usuario)  # Usar obtener_labor_dict para respuesta
     if not labor:
         raise HTTPException(404, "Labor no encontrada")
     return labor
@@ -72,7 +78,7 @@ def actualizar_labor(
     Actualizar una labor.
     Ahora soporta actualizar tipo_labor_id si es enviado.
     """
-    labor = obtener_labor_crud(db, id, usuario)
+    labor = obtener_labor_objeto(db, id, usuario)  # Usar obtener_labor_objeto para actualizar
     if not labor:
         raise HTTPException(404, "Labor no encontrada")
     return actualizar_labor_crud(db, labor, data, usuario)
@@ -86,7 +92,7 @@ def eliminar_labor(
     _ = Depends(require_role(["admin"]))
 ):
     """Eliminar una labor"""
-    labor = obtener_labor_crud(db, id, usuario)
+    labor = obtener_labor_objeto(db, id, usuario)  # Usar obtener_labor_objeto para eliminar
     if not labor:
         raise HTTPException(404, "Labor no encontrada")
     eliminar_labor_crud(db, labor, usuario)
@@ -103,7 +109,7 @@ def asignar_herramienta(
     usuario = Depends(get_current_user),
     _ = Depends(require_role(["admin", "talento_humano"]))
 ):
-    labor = obtener_labor_crud(db, id, usuario)
+    labor = obtener_labor_objeto(db, id, usuario)  # Usar obtener_labor_objeto
     if not labor:
         raise HTTPException(404, "Labor no encontrada")
     return asignar_herramienta_crud(db, labor, data, usuario)
@@ -117,7 +123,7 @@ def asignar_insumo(
     usuario = Depends(get_current_user),
     _ = Depends(require_role(["admin", "talento_humano"]))
 ):
-    labor = obtener_labor_crud(db, id, usuario)
+    labor = obtener_labor_objeto(db, id, usuario)  # Usar obtener_labor_objeto
     if not labor:
         raise HTTPException(404, "Labor no encontrada")
     return asignar_insumo_crud(db, labor, data, usuario)
@@ -130,7 +136,7 @@ def registrar_avance(
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user)
 ):
-    labor = obtener_labor_crud(db, id, usuario)
+    labor = obtener_labor_objeto(db, id, usuario)  # Usar obtener_labor_objeto
     if not labor:
         raise HTTPException(404, "Labor no encontrada")
     return registrar_avance_crud(db, labor, data, usuario)
@@ -142,7 +148,7 @@ def completar_labor(
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user)
 ):
-    labor = obtener_labor_crud(db, id, usuario)
+    labor = obtener_labor_objeto(db, id, usuario)  # Usar obtener_labor_objeto
     if not labor:
         raise HTTPException(404, "Labor no encontrada")
     return completar_labor_crud(db, labor, usuario)
@@ -156,10 +162,23 @@ def devolver_herramienta(
     db: Session = Depends(get_db),
     usuario = Depends(get_current_user)
 ):
-    labor = obtener_labor_crud(db, id, usuario)
+    labor = obtener_labor_objeto(db, id, usuario)  # Usar obtener_labor_objeto
     if not labor:
         raise HTTPException(404, "Labor no encontrada")
     return devolver_herramienta_crud(db, labor, movimiento_id, cantidad, usuario)
+
+@router.post("/{id}/devolver-insumo/{movimiento_id}")
+def devolver_insumo(
+    id: int,
+    movimiento_id: int,
+    cantidad: float = Query(..., gt=0),
+    db: Session = Depends(get_db),
+    usuario = Depends(get_current_user)
+):
+    labor = obtener_labor_objeto(db, id, usuario)
+    if not labor:
+        raise HTTPException(404, "Labor no encontrada")
+    return devolver_insumo_crud(db, labor, movimiento_id, cantidad, usuario)
 
 
 # === ENDPOINTS ADICIONALES ===

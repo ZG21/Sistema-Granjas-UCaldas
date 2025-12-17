@@ -17,6 +17,7 @@ import GestionLotesPage from './pages/GestionLotes'; // NUEVO IMPORT
 import GestionCultivosPage from './pages/GestionCultivos';
 import GestionInventarioPage from './pages/GestionInventarios';
 import GestionDiagnosticosPage from './pages/GestionDiagnosticos';
+import GestionRecomendacionesPage from './pages/GestionRecomendaciones';
 
 function App() {
   const authValue = useAuthValue();
@@ -165,6 +166,18 @@ function App() {
             <Route path="/gestion/inventario" element={
               <ProtectedRoute>
                 <GestionInventarioPage />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/gestion/recomendaciones" element={
+              <ProtectedRoute>
+                <GestionRecomendacionesPage />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/gestion/labores" element={
+              <ProtectedRoute>
+                <GestionLaboresPage />
               </ProtectedRoute>
             } />
 
