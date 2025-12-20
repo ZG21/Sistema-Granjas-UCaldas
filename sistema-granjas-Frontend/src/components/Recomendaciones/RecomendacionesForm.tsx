@@ -157,7 +157,7 @@ const RecomendacionForm: React.FC<RecomendacionFormProps> = ({
     };
 
     const tiposRecomendacion = [
-        'riego', 'fertilizacion', 'poda', 'cosecha', 'proteccion', 'otro'
+        'aplicación al suelo', 'aplicación foliar', 'podas', 'cosecha y saneamiento', 'manejo de arvenses', 'censo poblacional', 'homiga arriera', 'otro'
     ];
 
     const estadosRecomendacion = [

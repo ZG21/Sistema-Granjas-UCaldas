@@ -1,6 +1,8 @@
 // components/Sidebar.tsx
+import { useState } from 'react';
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import exportService from '../../services/exportService';
 
 interface SidebarProps {
     isOpen?: boolean;
@@ -8,6 +10,8 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
     const { user } = useAuth();
+    const [exporting, setExporting] = useState(false);
+    const [exportMessage, setExportMessage] = useState('');
 
     if (!isOpen) return null;
 
@@ -26,6 +30,34 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
             lotesCount: 15,
             usuariosCount: 24
         };
+    };
+
+    // Función para exportar backup
+    const handleExportBackup = async () => {
+        if (exporting) return;
+
+        setExporting(true);
+        setExportMessage('Preparando exportación...');
+
+        try {
+            const result = await exportService.exportarBackupCompleto();
+            setExportMessage(`¡Exportación completada! (${result.filename})`);
+
+            // Limpiar mensaje después de 5 segundos
+            setTimeout(() => {
+                setExportMessage('');
+            }, 5000);
+        } catch (error) {
+            console.error('❌ Error en exportación:', error);
+            setExportMessage('Error al exportar. Verifica tu conexión.');
+
+            // Limpiar mensaje después de 5 segundos
+            setTimeout(() => {
+                setExportMessage('');
+            }, 5000);
+        } finally {
+            setExporting(false);
+        }
     };
 
     const stats = getStats();
@@ -229,28 +261,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
                     </h3>
                     <ul className="space-y-1">
                         {canSee(['admin']) && (
-                            <li>
-                                <button className="flex items-center space-x-2 text-gray-700 hover:text-green-600 hover:bg-gray-50 p-2 rounded w-full text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <i className="fas fa-download w-4 text-blue-500"></i>
-                                    <span>Exportar Datos (CSV)</span>
-                                    <span className="ml-auto text-xs bg-blue-100 text-blue-600 px-1 py-0.5 rounded">Próximamente</span>
+                            <li className="mb-2">
+                                <button
+                                    onClick={handleExportBackup}
+                                    disabled={exporting}
+                                    className="flex items-center space-x-2 text-gray-700 hover:text-green-600 hover:bg-gray-50 p-2 rounded w-full text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <i className={`fas ${exporting ? 'fa-spinner fa-spin' : 'fa-database'} w-4 text-blue-500`}></i>
+                                    <span className="flex-1">{exporting ? 'Exportando Backup...' : 'Exportar Backup Completo'}</span>
                                 </button>
+                                {exportMessage && (
+                                    <div className={`text-xs mt-1 ml-2 px-2 py-1 rounded ${exportMessage.includes('Error')
+                                        ? 'bg-red-100 text-red-600'
+                                        : 'bg-green-100 text-green-600'
+                                        }`}>
+                                        {exportMessage}
+                                    </div>
+                                )}
                             </li>
                         )}
 
-                        <li>
-                            <button className="flex items-center space-x-2 text-gray-700 hover:text-green-600 hover:bg-gray-50 p-2 rounded w-full text-left transition-colors">
-                                <i className="fas fa-search w-4 text-gray-500"></i>
-                                <span>Buscar en el sistema</span>
-                            </button>
-                        </li>
-
-                        <li>
-                            <a href="/ayuda" className="flex items-center space-x-2 text-gray-700 hover:text-green-600 hover:bg-gray-50 p-2 rounded transition-colors">
-                                <i className="fas fa-question-circle w-4 text-gray-500"></i>
-                                <span>Ayuda y Soporte</span>
-                            </a>
-                        </li>
                     </ul>
                 </div>
 

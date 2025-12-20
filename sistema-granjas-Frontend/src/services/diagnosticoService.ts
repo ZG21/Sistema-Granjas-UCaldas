@@ -329,7 +329,7 @@ export const diagnosticoService = {
   // ===================== AUXILIARES =====================
 
   async obtenerTiposDiagnostico(): Promise<string[]> {
-    return ['nutricional', 'biológico', 'fenología', 'plagas'];
+    return ['nutricional', 'controladores_biológicos', 'fenología', 'plagas'];
   },
 
   async obtenerEstadosDiagnostico(): Promise<string[]> {

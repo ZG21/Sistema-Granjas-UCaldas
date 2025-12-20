@@ -13,6 +13,7 @@ import EstadisticasModal from './Estadisticas';
 import AprobarRecomendacionModal from './AprobarRecomendacion';
 import { useAuth } from '../../hooks/useAuth';
 import granjaService from '../../services/granjaService';
+import exportService from '../../services/exportService';
 
 const GestionRecomendaciones: React.FC = () => {
     const { user } = useAuth();
@@ -33,6 +34,28 @@ const GestionRecomendaciones: React.FC = () => {
     const [lotes, setLotes] = useState<any[]>([]);
     const [docentes, setDocentes] = useState<any[]>([]);
     const [filtros, setFiltros] = useState<RecomendacionFilters>({});
+    // Estados específicos para exportación
+    const [exporting, setExporting] = useState(false);
+    const [exportMessage, setExportMessage] = useState('');
+
+    // Handler para exportar recomendaciones
+    const handleExportRecomendaciones = async () => {
+        if (exporting) return;
+        setExporting(true);
+        setExportMessage('Exportando recomendaciones...');
+
+        try {
+            const result = await exportService.exportarRecomendaciones();
+            setExportMessage(`¡Exportación completada! (${result.filename})`);
+            setTimeout(() => setExportMessage(''), 5000);
+        } catch (error) {
+            console.error('❌ Error exportando recomendaciones:', error);
+            setExportMessage('Error al exportar.');
+            setTimeout(() => setExportMessage(''), 5000);
+        } finally {
+            setExporting(false);
+        }
+    };
 
     useEffect(() => {
         cargarDatos();
@@ -205,7 +228,25 @@ const GestionRecomendaciones: React.FC = () => {
             <div className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-bold text-gray-800">Gestión de Recomendaciones</h1>
+                    <div className="flex items-center space-x-3 m-2">
+                        {exportMessage && (
+                            <span className={`text-sm px-3 py-1 rounded ${exportMessage.includes('Error')
+                                ? 'bg-red-100 text-red-600'
+                                : 'bg-green-100 text-green-600'
+                                }`}>
+                                {exportMessage}
+                            </span>
+                        )}
 
+                        <button
+                            onClick={handleExportRecomendaciones}
+                            disabled={exporting}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 disabled:opacity-50 transition-colors"
+                        >
+                            <i className={`fas ${exporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
+                            <span>{exporting ? 'Exportando...' : 'Exportar a Excel'}</span>
+                        </button>
+                    </div>
                     <div className="flex space-x-3">
                         <button
                             onClick={() => setShowEstadisticasModal(true)}

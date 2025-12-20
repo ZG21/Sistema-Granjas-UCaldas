@@ -13,6 +13,7 @@ import DetallesDiagnosticoModal from './DetallesDiagnosticoModal';
 import { useAuth } from '../../hooks/useAuth';
 import cultivoService from '../../services/cultivoService';
 import granjaService from '../../services/granjaService';
+import exportService from '../../services/exportService';
 
 const GestionDiagnosticos: React.FC = () => {
     const { user } = useAuth();
@@ -37,6 +38,28 @@ const GestionDiagnosticos: React.FC = () => {
 
     const [filtros, setFiltros] = useState<DiagnosticoFiltros>({});
     const [estadisticas, setEstadisticas] = useState<any>(null);
+    // Estados específicos para exportación
+    const [exporting, setExporting] = useState(false);
+    const [exportMessage, setExportMessage] = useState('');
+
+    // Handler para exportar diagnósticos
+    const handleExportDiagnosticos = async () => {
+        if (exporting) return;
+        setExporting(true);
+        setExportMessage('Exportando diagnósticos...');
+
+        try {
+            const result = await exportService.exportarDiagnosticos();
+            setExportMessage(`¡Exportación completada! (${result.filename})`);
+            setTimeout(() => setExportMessage(''), 5000);
+        } catch (error) {
+            console.error('❌ Error exportando diagnósticos:', error);
+            setExportMessage('Error al exportar.');
+            setTimeout(() => setExportMessage(''), 5000);
+        } finally {
+            setExporting(false);
+        }
+    };
 
     useEffect(() => {
         cargarDatos();
@@ -222,15 +245,46 @@ const GestionDiagnosticos: React.FC = () => {
     };
 
     const handleEliminarDiagnostico = async (id: number) => {
-        if (!confirm("¿Estás seguro de eliminar este diagnóstico?")) return;
+        if (!window.confirm("¿Estás seguro de eliminar este diagnóstico?")) return;
 
         try {
+            console.log(`🗑️ Intentando eliminar diagnóstico #${id}`);
+
             await diagnosticoService.eliminarDiagnostico(id);
+
+            console.log(`✅ Diagnóstico #${id} eliminado exitosamente`);
+
+            // Actualizar estado local
             setDiagnosticos(prev => prev.filter(d => d.id !== id));
+
+            // Mostrar toast de éxito
             toast.success("Diagnóstico eliminado exitosamente");
+
+            // Recargar estadísticas
             cargarEstadisticas();
+
         } catch (err: any) {
-            toast.error(`Error al eliminar: ${err.message}`);
+            console.error('❌ Error al eliminar diagnóstico:', err);
+
+            // Extraer mensaje de error de diferentes formas
+            let errorMessage = 'Error al eliminar el diagnóstico';
+
+            if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            } else if (err.message) {
+                errorMessage = err.message;
+            } else if (typeof err === 'string') {
+                errorMessage = err;
+            } else if (err.data?.message) {
+                errorMessage = err.data.message;
+            }
+            console.log('Mensaje de error a mostrar:', errorMessage);
+
+            // Mostrar toast de error
+            toast.error(errorMessage);
+
+            // También puedes mostrar un alert temporal si el toast no funciona
+            // alert(`Error: ${errorMessage}`);
         }
     };
 
@@ -342,6 +396,28 @@ const GestionDiagnosticos: React.FC = () => {
             <div className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-bold text-gray-800">Gestión de Diagnósticos</h1>
+                    <div className="flex justify-between items-center mb-6">
+
+                        <div className="flex items-center space-x-3 m-2">
+                            {exportMessage && (
+                                <span className={`text-sm px-3 py-1 rounded ${exportMessage.includes('Error')
+                                    ? 'bg-red-100 text-red-600'
+                                    : 'bg-green-100 text-green-600'
+                                    }`}>
+                                    {exportMessage}
+                                </span>
+                            )}
+
+                            <button
+                                onClick={handleExportDiagnosticos}
+                                disabled={exporting}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 disabled:opacity-50 transition-colors"
+                            >
+                                <i className={`fas ${exporting ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
+                                <span>{exporting ? 'Exportando...' : 'Exportar a Excel'}</span>
+                            </button>
+                        </div>
+                    </div>
 
                     <button
                         onClick={() => setShowCrearModal(true)}

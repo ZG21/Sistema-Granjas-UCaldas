@@ -260,7 +260,7 @@ const DiagnosticosTable: React.FC<DiagnosticosTableProps> = ({
                                             #{diagnostico.id}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            <div className="font-medium">{diagnostico.tipo}</div>
+                                            <div className="font-medium">{diagnostico.tipo.replace(/_/g, ' ')}</div>
                                             <div className="text-gray-500 truncate max-w-xs">
                                                 {diagnostico.descripcion?.substring(0, 50) || 'Sin descripción'}...
                                             </div>
